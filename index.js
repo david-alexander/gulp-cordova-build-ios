@@ -34,7 +34,8 @@ module.exports = function(options) {
             release = options.release === true,
             device = options.device === true,
             codeSignIdentity = options.codeSignIdentity || null,
-            provisioningProfile = options.provisioningProfile || null;
+            provisioningProfile = options.provisioningProfile || null,
+            spec = options.version ? ("ios@" + options.version) : "ios";
 
         var ipa = (release && device && codeSignIdentity != null && provisioningProfile != null) ? options.ipa : null;
 
@@ -48,7 +49,7 @@ module.exports = function(options) {
         }).then(function() {
             if(exists === false || reAdd) {
                 // Add the iOS platform if it does not exist or we have to re-add it
-                return cordova.platforms('add', 'ios');
+                return cordova.platforms('add', spec);
             }
         }).then(function() {
             // Build the platform
