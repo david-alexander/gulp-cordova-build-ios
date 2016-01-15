@@ -65,14 +65,22 @@ module.exports = function(options) {
                 params.push('--device');
             }
 
-            if (codeSignIdentity)
+            if (codeSignIdentity !== null && provisioningProfile !== null)
             {
-                params.push('--codeSignIdentity="' + codeSignIdentity + '"');
-            }
+                fs.writeFileSync('build.json', JSON.stringify({
+                    ios: {
+                        debug: {
+                            codeSignIdentity: codeSignIdentity,
+                            provisioningProfile: provisioningProfile
+                        },
+                        release: {
+                            codeSignIdentity: codeSignIdentity,
+                            provisioningProfile: provisioningProfile
+                        }
+                    }
+                }));
 
-            if (provisioningProfile)
-            {
-                params.push('--provisioningProfile="' + provisioningProfile + '"');
+                params.push('--buildConfig=build.json');
             }
 
             return cordova.build({platforms: ['ios'], options: params});
