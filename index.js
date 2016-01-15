@@ -37,10 +37,6 @@ module.exports = function(options) {
             provisioningProfile = options.provisioningProfile || null,
             spec = options.version ? ("ios@" + options.version) : "ios";
 
-        var ipa = (release && device && codeSignIdentity != null && provisioningProfile != null) ? options.ipa : null;
-
-        var startTime = new Date();
-
         Q.fcall(function() {
             if(reAdd) {
                 // First remove the platform if we have to re-add it
@@ -84,44 +80,6 @@ module.exports = function(options) {
             }
 
             return cordova.build({platforms: ['ios'], options: params});
-        }).then(function() {
-            if (ipa !== null)
-            {
-                var appDirectory = null;
-
-                var appDirectoriesParent = path.join(process.cwd(), 'platforms', 'ios', 'build', 'device');
-                var potentialAppDirectories = fs.readdirSync(appDirectoriesParent);
-
-                for (var i = 0; i < potentialAppDirectories.length; i++)
-                {
-                    var potentialAppDirectory = path.join(appDirectoriesParent, potentialAppDirectories[i]);
-                    var stats = fs.statSync(potentialAppDirectory);
-
-                    if (stats.isDirectory() && stats.mtime.getTime() > startTime)
-                    {
-                        appDirectory = potentialAppDirectory;
-                        break;
-                    }
-                }
-
-                if (appDirectory)
-                {
-                    var deferred = Q.defer();
-
-                    exec('/usr/bin/xcrun -sdk iphoneos PackageApplication "' + appDirectory + '" -o "' + ipa + '"', {}, function (error, stdout, stderr) {
-                        if (error === null)
-                        {
-                            deferred.resolve();
-                        }
-                        else
-                        {
-                            deferred.reject(error);
-                        }
-                    });
-
-                    return deferred.promise;
-                }
-            }
         })
         .then(cb).catch(function(err) {
             // Return an error if something happened
