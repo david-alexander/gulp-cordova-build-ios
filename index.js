@@ -9,6 +9,8 @@
 
 // module dependencies
 var path = require('path'),
+    File = require('vinyl'),
+    lazystream = require('lazystream'),
     fs = require('fs'),
     through = require('through2'),
     gutil = require('gulp-util'),
@@ -20,12 +22,11 @@ var path = require('path'),
 // export the module
 module.exports = function(options) {
 
+    var buildStartTime = null;
+
     return through.obj(function(file, enc, cb) {
         // Change the working directory
         process.env.PWD = file.path;
-
-        // Pipe the file to the next step
-        this.push(file);
 
         cb();
     }, function(cb) {
@@ -36,6 +37,8 @@ module.exports = function(options) {
             codeSignIdentity = options.codeSignIdentity || null,
             provisioningProfile = options.provisioningProfile || null,
             spec = options.version ? ("ios@" + options.version) : "ios";
+
+        var self = this;
 
         Q.fcall(function() {
             if(reAdd) {
@@ -79,7 +82,41 @@ module.exports = function(options) {
                 params.push('--buildConfig=build.json');
             }
 
+            buildStartTime = new Date();
+
             return cordova.build({platforms: ['ios'], options: params});
+        })
+        .then(function() {
+            if (device)
+            {
+                var ipaParent = path.join(process.cwd(), 'platforms', 'ios', 'build', 'device');
+                var potentialIPAs = fs.readdirSync(ipaParent);
+
+                var ipa = null;
+
+                for (var i = 0; i < potentialIPAs.length; i++)
+                {
+                    var potentialIPA = path.join(ipaParent, potentialIPAs[i]);
+                    var stats = fs.statSync(potentialIPA);
+
+                    if (stats.isFile() && stats.mtime.getTime() > buildStartTime.getTime())
+                    {
+                        ipa = potentialIPA;
+                        break;
+                    }
+                }
+
+                if (ipa !== null)
+                {
+                    self.push(new File({
+                        base: ipaParent,
+                        path: ipa,
+                        contents: new lazystream.Readable(function() {
+                            return fs.createReadStream(ipa);
+                        })
+                    }));
+                }
+            }
         })
         .then(cb).catch(function(err) {
             // Return an error if something happened

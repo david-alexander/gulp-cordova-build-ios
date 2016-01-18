@@ -29,7 +29,9 @@
   "dependencies": {
     "cordova-lib": "^5.0.0",
     "gulp-util": "^3.0.4",
+    "lazystream": "^1.0.0",
     "q": "^1.3.0",
-    "through2": "^2.0.0"
+    "through2": "^2.0.0",
+    "vinyl": "^1.1.0"
   }
 }
